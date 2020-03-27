@@ -1,0 +1,56 @@
+trigger ConvertLeadTrigger on Lead (before update) {
+  // Make a list of leads to convert
+  List<Lead> leadsToConvert = new List<Lead>();
+  for (Lead l : Trigger.new) {
+    if (l.Status == 'CustomObject') {
+      leadsToConvert.add(l);
+    }
+  }
+  
+  // Create the special conversion object
+  KonvertoLeadCustomObj slc = new KonvertoLeadCustomObj(leadsToConvert);
+  
+  // Use the object's method to convert its leads
+  slc.convertToMembers();
+  
+  // Don't forget to use System.debug!
+  System.debug('Members created: ' + slc.getMembers());
+
+
+}
+
+
+public class KonvertoLeadCustomObj {
+  // Variables
+  List<Lead>  leads;
+  List<KonvertoLeads__c	> leadsConvertuar;
+
+  // Constructor  
+  public KonvertoLeadCustomObj(List<Lead> leadList) {
+    leads   = leadList;
+    leadsConvertuar = new List<KonvertoLeads__c	>();
+  }
+
+  // Method: convert leads to Members, not Contacts
+  public void convertToMembers() {
+    for (Lead l : leads) {
+      KonvertoLeads__c	 member = new KonvertoLeads__c	();
+      member.Name      = l.FirstName + ' ' + l.LastName;
+      member.Email__c  = l.Email;
+      leadsConvertuar.add(member);
+    }
+    insert leadsConvertuar;
+
+    // Delete the leads 
+    // Apex doesn't let us delete records in Trigger.new
+    // This is a workaround that tricks Apex!
+    List<Lead> workaround = leads.deepClone(true);
+      system.debug(workaround);
+delete workaround;
+  }
+    
+  // Method: get our Member list  
+  public List<KonvertoLeads__c	> getMembers() {
+    return leadsConvertuar;
+  }
+}
